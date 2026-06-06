@@ -25,7 +25,7 @@
 				>
 					<draggable
 						v-bind="DRAG_OPTIONS"
-						:model-value="buckets"
+						:model-value="displayBuckets"
 						group="buckets"
 						:disabled="!canWrite || newTaskInputFocused"
 						tag="ul"
@@ -446,8 +446,72 @@ const bucketDraggableComponentData = computed(() => ({
 }))
 const project = computed(() => projectId.value ? projectStore.projects[projectId.value] : null)
 const view = computed(() => project.value?.views.find(v => v.id === props.viewId) as IProjectView || null)
-const canWrite = computed(() => baseStore.currentProject?.maxPermission > Permissions.READ && view.value.bucketConfigurationMode === 'manual')
+const isFilterKanban = computed(() => isSavedFilter(project.value))
+const canWrite = computed(() => baseStore.currentProject?.maxPermission > Permissions.READ && view.value.bucketConfigurationMode === 'manual' && !isFilterKanban.value)
 const canCreateTasks = computed(() => canWrite.value && projectId.value > 0)
+
+// In a saved filter, every task is dumped into the filter view's default bucket. We reconstruct the
+// columns from each task's real source-project bucket (merged by title) so the board reflects the actual
+// kanban state. This is a read-only, UI-only workaround - nothing is persisted.
+function getSourceBucket(task: ITask): IBucket | null {
+	const candidates = (task.buckets ?? []).filter(b => b.projectViewId !== props.viewId)
+	if (candidates.length === 0) {
+		return null
+	}
+
+	const kanbanView = projectStore.projects[task.projectId]?.views
+		?.filter(v => v.viewKind === 'kanban')
+		.sort((a, b) => a.position - b.position)[0]
+
+	return candidates.find(b => b.projectViewId === kanbanView?.id) ?? candidates[0]
+}
+
+function groupTasksBySourceBucket(realBuckets: IBucket[]): IBucket[] {
+	const columns = new Map<string, {bucket: IBucket, minPosition: number}>()
+	const noBucketTitle = t('project.kanban.filterNoBucket')
+
+	for (const realBucket of realBuckets) {
+		for (const task of realBucket.tasks) {
+			const source = getSourceBucket(task)
+			const title = source?.title ?? noBucketTitle
+			const position = source?.position ?? Number.MAX_SAFE_INTEGER
+
+			const existing = columns.get(title)
+			if (existing === undefined) {
+				columns.set(title, {
+					minPosition: position,
+					bucket: {
+						id: 0,
+						title,
+						projectId: projectIdWithFallback.value,
+						projectViewId: props.viewId,
+						limit: 0,
+						tasks: [task],
+						count: 1,
+						position: 0,
+						createdBy: null,
+						created: null,
+						updated: null,
+						maxPermission: null,
+					} as unknown as IBucket,
+				})
+				continue
+			}
+
+			existing.bucket.tasks.push(task)
+			existing.bucket.count++
+			existing.minPosition = Math.min(existing.minPosition, position)
+		}
+	}
+
+	return [...columns.values()]
+		.sort((a, b) => (a.minPosition - b.minPosition) || a.bucket.title.localeCompare(b.bucket.title))
+		.map(({bucket}, index) => ({...bucket, id: index + 1}))
+}
+
+const displayBuckets = computed<IBucket[]>(() => isFilterKanban.value
+	? groupTasksBySourceBucket(kanbanStore.buckets)
+	: kanbanStore.buckets)
 
 const isTouchDevice = ref(false)
 if (typeof window !== 'undefined') {
@@ -494,12 +558,16 @@ watch(
 		projectId: projectId.value,
 		viewId: props.viewId,
 	}),
-	({params, projectId, viewId}) => {
+	async ({params, projectId, viewId}) => {
 		if (projectId === undefined || Number(projectId) === 0) {
 			return
 		}
 		collapsedBuckets.value = getCollapsedBucketState(projectId)
-		kanbanStore.loadBucketsForProject(projectId, viewId, params)
+		await kanbanStore.loadBucketsForProject(projectId, viewId, params)
+
+		if (isFilterKanban.value) {
+			await loadAllFilterTasks()
+		}
 	},
 	{
 		immediate: true,
@@ -516,6 +584,12 @@ function handleTaskContainerScroll(id: IBucket['id'], el: HTMLElement) {
 	if (!el) {
 		return
 	}
+
+	// Filter kanban columns are virtual (regrouped by source bucket), so per-column ids have no page
+	// state. All matching tasks are eager-loaded after the initial load instead.
+	if (isFilterKanban.value) {
+		return
+	}
 	const scrollTopMax = el.scrollHeight - el.clientHeight
 	const threshold = el.scrollTop + el.scrollTop * MIN_SCROLL_HEIGHT_PERCENT
 	if (scrollTopMax > threshold) {
@@ -528,6 +602,27 @@ function handleTaskContainerScroll(id: IBucket['id'], el: HTMLElement) {
 		params.value,
 		id,
 	)
+}
+
+// Regrouped filter columns are derived from loaded tasks, so partially-loaded data would scatter
+// incompletely. Eager-load every page of the underlying filter buckets so the columns are complete.
+// loadNextTasksForBucket self-guards against double-loads and stops returning tasks once exhausted.
+async function loadAllFilterTasks() {
+	let loadedMore = true
+	while (loadedMore) {
+		loadedMore = false
+		for (const bucket of [...kanbanStore.buckets]) {
+			const tasks = await kanbanStore.loadNextTasksForBucket(
+				projectId.value,
+				props.viewId,
+				params.value,
+				bucket.id,
+			)
+			if (tasks && tasks.length > 0) {
+				loadedMore = true
+			}
+		}
+	}
 }
 
 function updateTasks(bucketId: IBucket['id'], tasks: IBucket['tasks']) {

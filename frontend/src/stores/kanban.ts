@@ -15,6 +15,7 @@ import type {IBucket} from '@/modelTypes/IBucket'
 import {useAuthStore} from '@/stores/auth'
 import type {IProjectView} from '@/modelTypes/IProjectView'
 import {useBaseStore} from '@/stores/base'
+import {getSavedFilterIdFromProjectId} from '@/services/savedFilter'
 
 const TASKS_PER_BUCKET = 25
 
@@ -258,11 +259,16 @@ export const useKanbanStore = defineStore('kanban', () => {
 		// Clear everything to prevent having old buckets in the project if loading the buckets from this project takes a few moments
 		setBuckets([])
 
+		const expand = ['comment_count', 'is_unread']
+		if (getSavedFilterIdFromProjectId(projectId) > 0) {
+			expand.push('buckets')
+		}
+
 		const taskCollectionService = new TaskCollectionService()
 		try {
 			const newBuckets = await taskCollectionService.getAll({projectId, viewId}, {
 				...params,
-				expand: ['comment_count', 'is_unread'],
+				expand,
 				per_page: TASKS_PER_BUCKET,
 			})
 			setBuckets(newBuckets)
@@ -302,6 +308,9 @@ export const useKanbanStore = defineStore('kanban', () => {
 		params.filter_timezone = authStore.settings.timezone
 		params.per_page = TASKS_PER_BUCKET
 		params.expand = ['comment_count', 'is_unread']
+		if (getSavedFilterIdFromProjectId(projectId) > 0) {
+			params.expand.push('buckets')
+		}
 
 		const taskService = new TaskCollectionService()
 		try {

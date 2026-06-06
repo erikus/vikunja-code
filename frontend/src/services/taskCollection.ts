@@ -14,7 +14,7 @@ export interface TaskFilterParams {
 	filter_timezone?: string,
 	s: string,
 	per_page?: number,
-	expand?: ExpandTaskFilterParam,
+	expand?: ExpandTaskFilterParam | ExpandTaskFilterParam[],
 }
 
 export function getDefaultTaskFilterParams(): TaskFilterParams {
