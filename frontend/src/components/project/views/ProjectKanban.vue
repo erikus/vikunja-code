@@ -1024,6 +1024,7 @@ function unCollapseBucket(bucket: IBucket) {
 <style lang="scss">
 $ease-out: all .3s cubic-bezier(0.23, 1, 0.32, 1);
 $bucket-width: 300px;
+$bucket-width-mobile: 240px; // 20% narrower so two buckets fit on screen
 $bucket-header-height: 60px;
 $bucket-right-margin: 1rem;
 $crazy-height-calculation: '100vh - 4.5rem - 1.5rem - 1rem - 1.5rem - 11px';
@@ -1086,6 +1087,7 @@ $filter-container-height: '1rem - #{$switch-view-height}';
 
 		@media screen and (max-width: $tablet) {
 			scroll-snap-align: center;
+			inline-size: $bucket-width-mobile;
 		}
 
 		.tasks {
