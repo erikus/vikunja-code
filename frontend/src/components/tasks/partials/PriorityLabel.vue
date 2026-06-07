@@ -18,7 +18,7 @@
 				icon="exclamation"
 			/>
 		</span>
-		<span>
+		<span class="priority-text">
 			<template v-if="priority === priorities.UNSET">{{ $t('task.priority.unset') }}</template>
 			<template v-if="priority === priorities.LOW">{{ $t('task.priority.low') }}</template>
 			<template v-if="priority === priorities.MEDIUM">{{ $t('task.priority.medium') }}</template>

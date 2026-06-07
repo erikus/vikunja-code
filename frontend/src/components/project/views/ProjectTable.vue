@@ -498,6 +498,28 @@ const taskDetailRoutes = computed(() => Object.fromEntries(
 	.user {
 		margin: 0;
 	}
+
+	@media screen and (max-width: $tablet) {
+		th,
+		td {
+			padding-inline: .4rem;
+		}
+
+		tbody td {
+			font-size: .85rem;
+		}
+
+		// Priority is conveyed by its icon and colour on mobile; the word is redundant
+		:deep(.priority-label) {
+			.priority-text {
+				display: none;
+			}
+
+			.icon {
+				padding-inline-end: 0;
+			}
+		}
+	}
 }
 
 .columns-filter {
