@@ -59,12 +59,9 @@ defineEmits<{
 		margin-inline-start: -0.5rem;
 	}
 
-	// Hide usernames on desktop, show on mobile
+	// Show avatars only — usernames are hidden at every breakpoint
 	:deep(.user .username) {
-		@media screen and (min-width: $tablet) {
-			display: none;
-		}
-
+		display: none;
 	}
 
 	:deep(.user) {
@@ -74,18 +71,10 @@ defineEmits<{
   		gap: .5rem;
 	}
 
-	:deep(.user > .username) {
-		font-size: .75rem;
-	}
-
 	&.is-inline {
 		:deep(.user) {
 			display: inline;
 			text-wrap: nowrap;
-		}
-
-		:deep(.user > .username) {
-			margin-inline-start: .5rem;
 		}
 	}
 }
