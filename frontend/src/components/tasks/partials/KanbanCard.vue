@@ -73,6 +73,11 @@
 				v-if="projectTitle"
 				class="project-title"
 			>
+				<ColorBubble
+					v-if="projectColor !== ''"
+					:color="projectColor"
+					class="mie-1"
+				/>
 				{{ projectTitle }}
 			</span>
 
@@ -136,6 +141,7 @@ import PriorityLabel from '@/components/tasks/partials/PriorityLabel.vue'
 import ProgressBar from '@/components/misc/ProgressBar.vue'
 import Done from '@/components/misc/Done.vue'
 import Labels from '@/components/tasks/partials/Labels.vue'
+import ColorBubble from '@/components/misc/ColorBubble.vue'
 import ChecklistSummary from './ChecklistSummary.vue'
 import CommentCount from './CommentCount.vue'
 
@@ -174,14 +180,17 @@ const color = computed(() => getHexColor(props.task.hexColor))
 
 const projectStore = useProjectStore()
 
-const projectTitle = computed(() => {
+const project = computed(() => {
 	if (props.projectId === props.task.projectId) {
 		return
 	}
-	
-	const project = projectStore.projects[props.task.projectId]
-	return project?.title
+
+	return projectStore.projects[props.task.projectId]
 })
+
+const projectTitle = computed(() => project.value?.title)
+
+const projectColor = computed(() => project.value?.hexColor ?? '')
 
 const showTaskPosition = computed(() => window.DEBUG_TASK_POSITION)
 
@@ -355,6 +364,7 @@ $task-background: var(--white);
 		font-size: .8rem;
 		margin-block-end: .25rem;
 		display: flex;
+		align-items: center;
 	}
 
 	&.is-moving {
