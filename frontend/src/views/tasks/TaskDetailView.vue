@@ -1027,15 +1027,17 @@ function setActiveFields() {
 	// task.startDate = task.startDate || null
 	// task.endDate = task.endDate || null
 
-	// Set all active fields based on values in the model
-	activeFields.assignees = task.value.assignees.length > 0
+	// Set all active fields based on values in the model.
+	// Assignees and priority are always shown when editable so they can be set
+	// directly without first clicking the corresponding action button.
+	activeFields.assignees = canWrite.value || task.value.assignees.length > 0
 	activeFields.attachments = task.value.attachments.length > 0
 	activeFields.timeTracking = (task.value.timeEntriesCount ?? 0) > 0
 	activeFields.dueDate = task.value.dueDate !== null
 	activeFields.endDate = task.value.endDate !== null
 	activeFields.labels = task.value.labels.length > 0
 	activeFields.percentDone = task.value.percentDone > 0
-	activeFields.priority = task.value.priority !== PRIORITIES.UNSET
+	activeFields.priority = canWrite.value || task.value.priority !== PRIORITIES.UNSET
 	activeFields.relatedTasks = Object.keys(task.value.relatedTasks).length > 0
 	activeFields.reminders = task.value.reminders.length > 0
 	activeFields.repeatAfter = task.value.repeatAfter?.amount > 0 || task.value.repeatMode !== TASK_REPEAT_MODES.REPEAT_MODE_DEFAULT
