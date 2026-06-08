@@ -86,7 +86,7 @@ func getMessage(opts *Opts) *mail.Msg {
 	messageID := randPart + "@" + GetMailDomain()
 	m.SetMessageIDWithValue(messageID)
 	if opts.From == "" {
-		opts.From = "Vikunja <" + config.MailerFromEmail.GetString() + ">"
+		opts.From = "Swimmy <" + config.MailerFromEmail.GetString() + ">"
 	}
 	_ = m.From(opts.From)
 	_ = m.To(opts.To)

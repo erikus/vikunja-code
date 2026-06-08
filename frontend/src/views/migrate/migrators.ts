@@ -42,7 +42,7 @@ export const MIGRATORS = {
 	},
 	'vikunja-file': {
 		id: 'vikunja-file',
-		name: 'Vikunja Export',
+		name: 'Swimmy Export',
 		icon: vikunjaFileIcon,
 		isFileMigrator: true,
 	},

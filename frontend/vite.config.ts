@@ -170,8 +170,8 @@ function getBuildConfig(env: Record<string, string>) {
 				injectRegister: false,
 				useCredentials: true,
 				manifest: {
-					name: 'Vikunja',
-					short_name: 'Vikunja',
+					name: 'Swimmy',
+					short_name: 'Swimmy',
 					theme_color: '#1973ff',
 					icons: [
 						{
