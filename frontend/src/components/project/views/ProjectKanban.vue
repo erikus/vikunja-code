@@ -335,6 +335,7 @@ import ProjectViewService from '@/services/projectViews'
 import ProjectViewModel from '@/models/projectView'
 import TaskBucketService from '@/services/taskBucket'
 import TaskBucketModel from '@/models/taskBucket'
+import {groupTasksBySavedFilterSourceBucket} from '@/helpers/savedFilterKanbanBuckets'
 
 const props = defineProps<{
 	isLoadingProject: boolean,
@@ -450,67 +451,14 @@ const isFilterKanban = computed(() => isSavedFilter(project.value))
 const canWrite = computed(() => baseStore.currentProject?.maxPermission > Permissions.READ && view.value.bucketConfigurationMode === 'manual' && !isFilterKanban.value)
 const canCreateTasks = computed(() => canWrite.value && projectId.value > 0)
 
-// In a saved filter, every task is dumped into the filter view's default bucket. We reconstruct the
-// columns from each task's real source-project bucket (merged by title) so the board reflects the actual
-// kanban state. This is a read-only, UI-only workaround - nothing is persisted.
-function getSourceBucket(task: ITask): IBucket | null {
-	const candidates = (task.buckets ?? []).filter(b => b.projectViewId !== props.viewId)
-	if (candidates.length === 0) {
-		return null
-	}
-
-	const kanbanView = projectStore.projects[task.projectId]?.views
-		?.filter(v => v.viewKind === 'kanban')
-		.sort((a, b) => a.position - b.position)[0]
-
-	return candidates.find(b => b.projectViewId === kanbanView?.id) ?? candidates[0]
-}
-
-function groupTasksBySourceBucket(realBuckets: IBucket[]): IBucket[] {
-	const columns = new Map<string, {bucket: IBucket, minPosition: number}>()
-	const noBucketTitle = t('project.kanban.filterNoBucket')
-
-	for (const realBucket of realBuckets) {
-		for (const task of realBucket.tasks) {
-			const source = getSourceBucket(task)
-			const title = source?.title ?? noBucketTitle
-			const position = source?.position ?? Number.MAX_SAFE_INTEGER
-
-			const existing = columns.get(title)
-			if (existing === undefined) {
-				columns.set(title, {
-					minPosition: position,
-					bucket: {
-						id: 0,
-						title,
-						projectId: projectIdWithFallback.value,
-						projectViewId: props.viewId,
-						limit: 0,
-						tasks: [task],
-						count: 1,
-						position: 0,
-						createdBy: null,
-						created: null,
-						updated: null,
-						maxPermission: null,
-					} as unknown as IBucket,
-				})
-				continue
-			}
-
-			existing.bucket.tasks.push(task)
-			existing.bucket.count++
-			existing.minPosition = Math.min(existing.minPosition, position)
-		}
-	}
-
-	return [...columns.values()]
-		.sort((a, b) => (a.minPosition - b.minPosition) || a.bucket.title.localeCompare(b.bucket.title))
-		.map(({bucket}, index) => ({...bucket, id: index + 1}))
-}
-
 const displayBuckets = computed<IBucket[]>(() => isFilterKanban.value
-	? groupTasksBySourceBucket(kanbanStore.buckets)
+	? groupTasksBySavedFilterSourceBucket({
+		buckets: kanbanStore.buckets,
+		currentViewId: props.viewId,
+		projectId: projectIdWithFallback.value,
+		noBucketTitle: t('project.kanban.filterNoBucket'),
+		getProjectViews: projectId => projectStore.projects[projectId]?.views,
+	})
 	: kanbanStore.buckets)
 
 const isTouchDevice = ref(false)
