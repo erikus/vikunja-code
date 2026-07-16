@@ -56,6 +56,7 @@ import DropdownItem from '@/components/misc/DropdownItem.vue'
 import BucketService from '@/services/bucket'
 import TaskBucketService from '@/services/taskBucket'
 import TaskBucketModel from '@/models/taskBucket'
+import {isSavedFilter} from '@/services/savedFilter'
 
 import {success} from '@/message'
 
@@ -158,8 +159,6 @@ async function changeBucket(bucket: IBucket) {
 		updatedBuckets.push({...bucket})
 	}
 
-	kanbanStore.moveTaskToBucket(props.task, bucket.id)
-
 	// Only pick up done state from the response since moving to/from the
 	// done bucket can toggle it. Spreading the full response task would
 	// overwrite fields like maxPermission that are not part of this endpoint.
@@ -169,6 +168,12 @@ async function changeBucket(bucket: IBucket) {
 		doneAt: updatedTaskBucket.task?.doneAt ?? props.task.doneAt,
 		buckets: updatedBuckets,
 		bucketId: bucket.id,
+	}
+
+	if (isSavedFilter(baseStore.currentProject)) {
+		kanbanStore.setTaskInBucket(updatedTask)
+	} else {
+		kanbanStore.moveTaskToBucket(updatedTask, bucket.id)
 	}
 
 	emit('update:task', updatedTask)

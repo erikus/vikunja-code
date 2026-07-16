@@ -123,8 +123,6 @@ export const useKanbanStore = defineStore('kanban', () => {
 			return
 		}
 
-		let found = false
-
 		const findAndUpdate = (b: number) => {
 			for (const [t, taskInBucket] of buckets.value[b].tasks.entries()) {
 				if (taskInBucket.id === task.id) {
@@ -132,18 +130,12 @@ export const useKanbanStore = defineStore('kanban', () => {
 					bucket.tasks[t] = task
 
 					buckets.value[b] = bucket
-
-					found = true
-					return
 				}
 			}
 		}
 
 		for (let b = 0; b < buckets.value.length; b++) {
 			findAndUpdate(b)
-			if (found) {
-				return
-			}
 		}
 	}
 	
@@ -186,7 +178,11 @@ export const useKanbanStore = defineStore('kanban', () => {
 		const {bucketIndex} = getTaskIndicesById(buckets.value, task.id)
 		if (bucketIndex === null) return
 		const currentTaskBucket = buckets.value[bucketIndex]
-		if (typeof currentTaskBucket === 'undefined' || currentTaskBucket.id === bucketId) {
+		if (
+			typeof currentTaskBucket === 'undefined' ||
+			currentTaskBucket.id === bucketId ||
+			findIndexById(buckets.value, bucketId) === -1
+		) {
 			return
 		}		
 		removeTaskInBucket(task)

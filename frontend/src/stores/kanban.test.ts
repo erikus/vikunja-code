@@ -90,4 +90,41 @@ describe('kanban store: moveTaskToBucket', () => {
 		expect(kanban.buckets[0].tasks).toEqual([])
 		expect(kanban.buckets[1].tasks).toEqual([])
 	})
+
+	it('is a no-op when the target bucket is not present', () => {
+		const kanban = useKanbanStore()
+		kanban.setBuckets([makeBucket(1, 'Saved filter bucket')])
+
+		const task = makeTask(42, 1)
+		kanban.addTaskToBucket(task)
+
+		kanban.moveTaskToBucket(task, 999)
+
+		expect(kanban.buckets[0].tasks.map(t => t.id)).toEqual([42])
+		expect(kanban.buckets[0].tasks[0].bucketId).toBe(1)
+	})
+})
+
+describe('kanban store: setTaskInBucket', () => {
+	beforeEach(() => {
+		setActivePinia(createPinia())
+	})
+
+	it('updates all loaded copies of a task', () => {
+		const kanban = useKanbanStore()
+		kanban.setBuckets([
+			makeBucket(1, 'Filter bucket 1', [makeTask(42, 1)]),
+			makeBucket(2, 'Filter bucket 2', [makeTask(42, 1)]),
+		])
+
+		kanban.setTaskInBucket({
+			...makeTask(42, 3),
+			title: 'Updated task',
+		})
+
+		expect(kanban.buckets[0].tasks[0].bucketId).toBe(3)
+		expect(kanban.buckets[0].tasks[0].title).toBe('Updated task')
+		expect(kanban.buckets[1].tasks[0].bucketId).toBe(3)
+		expect(kanban.buckets[1].tasks[0].title).toBe('Updated task')
+	})
 })
