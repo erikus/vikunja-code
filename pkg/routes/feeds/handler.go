@@ -40,6 +40,13 @@ const feedItemLimit = 50
 // the v1 echo handler and the v2 Huma op set the same header.
 const AtomContentType = "application/atom+xml; charset=utf-8"
 
+// targetSetter is implemented by notifications whose rendering depends on who
+// is viewing them (e.g. models.TaskAssignedNotification). The target user is
+// not part of the persisted JSON, so it must be injected after re-hydration.
+type targetSetter interface {
+	SetTarget(target *user.User)
+}
+
 // BuildNotificationsAtomFeed renders the user's latest notifications as Atom XML
 // against an existing session. Notifications are not marked as read by being
 // fetched here. Shared by the v1 echo handler and the v2 Huma op.
@@ -69,6 +76,10 @@ func BuildNotificationsAtomFeed(s *xorm.Session, u *user.User) (string, error) {
 		}
 		if err := json.Unmarshal(raw, typed); err != nil {
 			continue
+		}
+
+		if ts, ok := typed.(targetSetter); ok {
+			ts.SetTarget(u)
 		}
 
 		titler, ok := typed.(notifications.Titler)

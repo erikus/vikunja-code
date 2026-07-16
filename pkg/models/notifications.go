@@ -178,6 +178,13 @@ type TaskAssignedNotification struct {
 	Project  *Project   `json:"project"`
 }
 
+// SetTarget sets the user viewing the notification. Target is excluded from
+// the persisted JSON (it differs per viewer), so consumers re-hydrating the
+// notification from the db must inject the viewer before rendering it.
+func (n *TaskAssignedNotification) SetTarget(target *user.User) {
+	n.Target = target
+}
+
 // ToTitle returns the translated one-line title for TaskAssignedNotification
 func (n *TaskAssignedNotification) ToTitle(lang string) string {
 	if n.Target.ID == n.Assignee.ID {
