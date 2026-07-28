@@ -2,7 +2,8 @@ import {PROJECT_VIEW_KINDS, type IProjectView} from '@/modelTypes/IProjectView'
 import type {IBucket} from '@/modelTypes/IBucket'
 import type {ITask} from '@/modelTypes/ITask'
 
-export type ProjectViewsByProject = (projectId: ITask['projectId']) => IProjectView[] | undefined
+export type SavedFilterSourceView = Pick<IProjectView, 'id' | 'viewKind' | 'bucketConfigurationMode' | 'position'>
+export type ProjectViewsByProject = (projectId: ITask['projectId']) => readonly SavedFilterSourceView[] | undefined
 
 export function getSavedFilterTaskSourceBucket(
 	task: ITask,
