@@ -49,8 +49,12 @@ test.describe('Related tasks quick add magic', () => {
 		await expect(relatedTaskLink).not.toContainText('!4')
 
 		await relatedTaskLink.click()
+		await expect(page).toHaveURL(/\/tasks\/\d+/)
+		// Scope to the modal: the parent task view stays in the DOM behind it and
+		// renders its own (unset) priority select now that the field is always
+		// shown when editable.
 		// Priority 4 is "Urgent"
-		await expect(page.locator('.task-view .columns.details select').first()).toHaveValue('4', {timeout: 10000})
+		await expect(page.locator('.modal-dialog .task-view .columns.details select').first()).toHaveValue('4', {timeout: 10000})
 	})
 
 	test('Creates the related task in another project via +project prefix', async ({authenticatedPage: page}) => {

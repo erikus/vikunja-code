@@ -1,7 +1,22 @@
 import {test, expect} from '../../support/fixtures'
+import {getApiUrl} from '../../support/apiUrl'
+
+// Requires the Dex OIDC test provider (started as a service container in CI).
+// Skip when the API has no OpenID providers configured, e.g. under the local
+// mage harness.
+async function openidConfigured(): Promise<boolean> {
+	try {
+		const response = await fetch(`${getApiUrl()}/info`)
+		const info = await response.json()
+		return (info?.auth?.openid_connect?.providers?.length ?? 0) > 0
+	} catch {
+		return false
+	}
+}
 
 test.describe('OpenID Login', () => {
 	test('logs in via Dex provider', async ({page}) => {
+		test.skip(!await openidConfigured(), 'No OpenID provider configured on the API')
 		await page.goto('/login')
 		await page.locator('text=Dex').click()
 

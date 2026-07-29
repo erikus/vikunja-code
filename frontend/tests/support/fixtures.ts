@@ -1,6 +1,6 @@
 import {test as base, type APIRequestContext, type Page} from '@playwright/test'
 import {Factory} from './factory'
-import {login, createFakeUser} from './authenticateUser'
+import {login, createFakeUser, setupApiUrl} from './authenticateUser'
 
 export const test = base.extend<{
 	apiContext: APIRequestContext;
@@ -8,6 +8,15 @@ export const test = base.extend<{
 	currentUser: any;
 	userToken: string;
 }>({
+	// The app's built-in API URL default assumes port 3456. The mage harness
+	// runs the API on a random port, so every page must be told where the API
+	// lives — including unauthenticated flows (login, registration, ...) that
+	// never go through authenticatedPage.
+	page: async ({page}, use) => {
+		await setupApiUrl(page)
+		await use(page)
+	},
+
 	apiContext: [async ({playwright}, use) => {
 		const baseURL = process.env.API_URL || 'http://localhost:3456/api/v1/'
 		const apiContext = await playwright.request.newContext({
