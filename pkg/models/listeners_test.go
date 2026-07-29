@@ -381,3 +381,43 @@ func TestAuditUserDataExportRequested(t *testing.T) {
 	assert.Equal(t, audit.UserTarget(42), entry.Target)
 	assert.Equal(t, audit.OutcomeSuccess, entry.Outcome)
 }
+
+// User-directed webhook dispatch routes a delivery to the target user's own
+// webhooks. Reminder/overdue events carry that target as `user`;
+// task.assignee.created carries it as `assignee` M-bM-^@M-^T the `doer` is the person
+// who assigned and must never be picked as the target.
+func TestGetUserIDFromAnyEvent(t *testing.T) {
+	t.Run("user field (reminder-style events)", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"user": map[string]interface{}{"id": float64(7)},
+		}
+		assert.Equal(t, int64(7), getUserIDFromAnyEvent(payload))
+	})
+	t.Run("assignee field (task.assignee.created)", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"doer":     map[string]interface{}{"id": float64(1)},
+			"assignee": map[string]interface{}{"id": float64(2)},
+			"task":     map[string]interface{}{"id": float64(3)},
+		}
+		assert.Equal(t, int64(2), getUserIDFromAnyEvent(payload))
+	})
+	t.Run("user wins over assignee when both present", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"user":     map[string]interface{}{"id": float64(7)},
+			"assignee": map[string]interface{}{"id": float64(2)},
+		}
+		assert.Equal(t, int64(7), getUserIDFromAnyEvent(payload))
+	})
+	t.Run("no target user", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"doer": map[string]interface{}{"id": float64(1)},
+		}
+		assert.Equal(t, int64(0), getUserIDFromAnyEvent(payload))
+	})
+	t.Run("null user is not a target", func(t *testing.T) {
+		payload := map[string]interface{}{
+			"user": nil,
+		}
+		assert.Equal(t, int64(0), getUserIDFromAnyEvent(payload))
+	})
+}

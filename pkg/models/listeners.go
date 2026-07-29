@@ -63,7 +63,11 @@ func RegisterListeners() {
 		RegisterEventForWebhook(&TaskCreatedEvent{})
 		RegisterEventForWebhook(&TaskUpdatedEvent{})
 		RegisterEventForWebhook(&TaskDeletedEvent{})
-		RegisterEventForWebhook(&TaskAssigneeCreatedEvent{})
+		// User-directed on top of the regular project-level registration: the
+		// assignee is the natural notification target, so their user-level
+		// webhooks should fire too (routed via the `assignee` payload field,
+		// see getUserIDFromAnyEvent).
+		RegisterUserDirectedEventForWebhook(&TaskAssigneeCreatedEvent{})
 		RegisterEventForWebhook(&TaskAssigneeDeletedEvent{})
 		RegisterEventForWebhook(&TaskCommentCreatedEvent{})
 		RegisterEventForWebhook(&TaskCommentUpdatedEvent{})
@@ -1199,8 +1203,16 @@ func getProjectIDFromAnyEvent(eventPayload map[string]interface{}) int64 {
 	return 0
 }
 
+// getUserIDFromAnyEvent resolves which user a user-directed event targets, so
+// that user's own webhooks fire. Reminder/overdue events carry the target as
+// `user`; task.assignee.created carries it as `assignee` (its `doer` is the
+// person who assigned, not the target).
 func getUserIDFromAnyEvent(eventPayload map[string]interface{}) int64 {
-	if u, has := eventPayload["user"]; has {
+	for _, key := range []string{"user", "assignee"} {
+		u, has := eventPayload[key]
+		if !has {
+			continue
+		}
 		userMap, ok := u.(map[string]interface{})
 		if !ok {
 			return 0
