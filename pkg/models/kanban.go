@@ -206,7 +206,12 @@ func GetTasksInBucketsForView(s *xorm.Session, view *ProjectView, projects []*Pr
 	tasks := []*Task{}
 
 	opts.projectViewID = view.ID
+	// Higher-priority tasks come first in each bucket, manual position breaks ties.
 	opts.sortby = []*sortParam{
+		{
+			orderBy: orderDescending,
+			sortBy:  taskPropertyPriority,
+		},
 		{
 			projectViewID: view.ID,
 			orderBy:       orderAscending,

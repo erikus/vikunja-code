@@ -74,6 +74,12 @@ func TestBucket_ReadAll(t *testing.T) {
 		assert.Equal(t, int64(3), buckets[2].Tasks[0].BucketID)
 		assert.Equal(t, int64(3), buckets[2].Tasks[1].BucketID)
 		assert.Equal(t, int64(3), buckets[2].Tasks[2].BucketID)
+
+		// Tasks in a bucket are sorted by priority first: task 3 (priority 100),
+		// then task 4 (priority 1), then task 5 (no priority).
+		assert.Equal(t, int64(3), buckets[1].Tasks[0].ID)
+		assert.Equal(t, int64(4), buckets[1].Tasks[1].ID)
+		assert.Equal(t, int64(5), buckets[1].Tasks[2].ID)
 	})
 	t.Run("filtered", func(t *testing.T) {
 		db.LoadAndAssertFixtures(t)

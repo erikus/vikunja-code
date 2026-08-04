@@ -298,8 +298,9 @@ export const useKanbanStore = defineStore('kanban', () => {
 
 		const params: TaskFilterParams = JSON.parse(JSON.stringify(ps))
 
-		params.sort_by = ['position']
-		params.order_by = ['asc']
+		// Keep in sync with the bucket task order in GetTasksInBucketsForView
+		params.sort_by = ['priority', 'position']
+		params.order_by = ['desc', 'asc']
 		params.filter = `${params.filter === '' ? '' : params.filter + ' && '}bucket_id = ${bucketId}`
 		params.filter_timezone = authStore.settings.timezone
 		params.per_page = TASKS_PER_BUCKET
