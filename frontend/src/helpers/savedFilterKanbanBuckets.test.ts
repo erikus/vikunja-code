@@ -93,6 +93,28 @@ describe('saved filter kanban buckets', () => {
 		expect(grouped[0].tasks.map(t => t.id)).toEqual([42])
 	})
 
+	it('sorts tasks in each grouped column by priority, highest first', () => {
+		const sourceBucket = makeBucket(7, 'Doing', 10, 2)
+		const noPrio = makeTask(1, 1, [sourceBucket])
+		const lowPrio = {...makeTask(2, 1, [sourceBucket]), priority: 1}
+		const highPrio = {...makeTask(3, 1, [sourceBucket]), priority: 4}
+		const buckets = [
+			makeBucket(1, 'Filter bucket 1', 20, 1, [noPrio, lowPrio]),
+			makeBucket(2, 'Filter bucket 2', 20, 2, [highPrio]),
+		]
+
+		const grouped = groupTasksBySavedFilterSourceBucket({
+			buckets,
+			currentViewId: 20,
+			projectId: -2,
+			noBucketTitle: 'No bucket',
+			getProjectViews: () => [makeView(10, 1)],
+		})
+
+		expect(grouped).toHaveLength(1)
+		expect(grouped[0].tasks.map(t => t.id)).toEqual([3, 2, 1])
+	})
+
 	it('falls back to the no bucket column only when no non-filter bucket metadata exists', () => {
 		const task = makeTask(42, 1, [makeBucket(99, 'Saved filter backlog', 20)])
 

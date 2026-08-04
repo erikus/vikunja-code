@@ -113,5 +113,12 @@ export function groupTasksBySavedFilterSourceBucket({
 
 			return a.bucket.title.localeCompare(b.bucket.title)
 		})
-		.map(({bucket}, index) => ({...bucket, id: index + 1}))
+		// Regrouping interleaves tasks from multiple filter buckets, losing the
+		// backend's per-bucket priority order — restore it (stable, so ties keep
+		// their loaded order).
+		.map(({bucket}, index) => ({
+			...bucket,
+			id: index + 1,
+			tasks: [...bucket.tasks].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0)),
+		}))
 }
